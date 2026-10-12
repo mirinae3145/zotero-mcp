@@ -16,6 +16,7 @@ import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 from urllib.request import ProxyHandler, Request, build_opener
 
 PROTOCOL = 1
@@ -52,11 +53,25 @@ class Broker:
 
     def submit(self, data):
         action = data.get("action")
-        if action not in ("tabs", "targets", "save"):
+        if action not in ("tabs", "targets", "open", "inspect", "save"):
             raise BridgeError("Unknown browser action")
+        if action in ("open", "inspect", "save"):
+            url, tab = data.get("url"), data.get("tab_id")
+            if (url is None) == (tab is None):
+                raise BridgeError("Provide exactly one URL or tab_id")
+            if url is not None:
+                if not isinstance(url, str):
+                    raise BridgeError("URL must be an HTTP(S) string")
+                parsed = urlsplit(url)
+                if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username or parsed.password:
+                    raise BridgeError("URL must be HTTP(S), without embedded credentials")
+            elif type(tab) is not int or tab < 0:
+                raise BridgeError("tab_id must be a non-negative integer from browser tabs")
+            if action == "inspect" and url is not None:
+                raise BridgeError("inspect requires an existing tab_id")
+            if action == "open" and tab is not None:
+                raise BridgeError("open requires a URL")
         if action == "save":
-            if type(data.get("tab_id")) is not int or data["tab_id"] < 0:
-                raise BridgeError("save requires a non-negative tab_id from browser tabs")
             target = data.get("target")
             if target is not None and (not isinstance(target, str) or re.fullmatch(r"[LC][1-9][0-9]*", target) is None):
                 raise BridgeError("target must be a Connector target ID from browser targets")

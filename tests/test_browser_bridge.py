@@ -73,6 +73,16 @@ class BrowserBridgeTests(unittest.TestCase):
             self.assertGreaterEqual(len(token), 32)
             self.assertEqual(read_token(path, create=True), token)
 
+    def test_urls_must_be_http_and_unambiguous(self):
+        for request in [{"action":"save","url":"file:///tmp/paper.pdf"},
+                        {"action":"save","url":"https://user:secret@example.com"},
+                        {"action":"save","url":"https://example.com","tab_id":3},
+                        {"action":"inspect","url":"https://example.com"}]:
+            with self.assertRaises(BridgeError):
+                self.server.broker.submit(request)
+        job=self.server.broker.submit({"action":"save","url":"https://doi.org/10.1/example"})
+        self.assertEqual(job["state"],"queued")
+
     def test_invalid_actions_and_tab_ids(self):
         for request in [{"action": "eval"}, {"action": "save", "tab_id": True},
                         {"action": "save", "tab_id": -1},

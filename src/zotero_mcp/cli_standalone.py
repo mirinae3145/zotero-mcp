@@ -241,7 +241,11 @@ def cmd_browser(args):
     else:
         request = {"action": args.browser_action}
         if args.browser_action == "save":
-            request.update(tab_id=args.tab_id, target=args.target, require_pdf=not args.allow_no_pdf)
+            request.update(tab_id=args.tab_id, url=args.url, target=args.target, require_pdf=not args.allow_no_pdf)
+        elif args.browser_action == "open":
+            request["url"] = args.url
+        elif args.browser_action == "inspect":
+            request["tab_id"] = args.tab_id
         result = client.run(request, args.timeout)
     if result.get("result", {}).get("ok") is False:
         if _json_mode(args):
@@ -1496,7 +1500,7 @@ def build_parser() -> argparse.ArgumentParser:
     # Browser Connector transport
     browser_p = sub.add_parser("browser", help="Save through the paired browser Zotero Connector")
     browser_sub = browser_p.add_subparsers(dest="browser_action", required=True)
-    for action in ("serve", "status", "tabs", "targets", "save", "result"):
+    for action in ("serve", "status", "tabs", "targets", "open", "inspect", "save", "result"):
         bp = browser_sub.add_parser(action)
         bp.add_argument("--json", action="store_true", dest="json_out", default=argparse.SUPPRESS)
         bp.add_argument("--port", type=int, default=23120)
@@ -1504,9 +1508,15 @@ def build_parser() -> argparse.ArgumentParser:
         if action not in ("serve", "status"):
             bp.add_argument("--timeout", type=float, default=120)
         if action == "save":
-            bp.add_argument("--tab-id", type=int, required=True, help="Open browser tab from browser tabs")
+            selection = bp.add_mutually_exclusive_group(required=True)
+            selection.add_argument("--tab-id", type=int, help="Open browser tab from browser tabs")
+            selection.add_argument("--url", help="Open this publication URL in the paired browser and save it")
             bp.add_argument("--target", help="Require this currently selected Connector target (L/C ID)")
             bp.add_argument("--allow-no-pdf", action="store_true", help="Allow a metadata-only save")
+        if action == "open":
+            bp.add_argument("url", help="HTTP(S) publication URL to open in the paired browser")
+        if action == "inspect":
+            bp.add_argument("--tab-id", type=int, required=True)
         if action == "result":
             bp.add_argument("job_id")
 

@@ -1,6 +1,7 @@
 # Saving with the browser Connector
 
-`zotero-cli browser save` invokes the paired Connector's toolbar-save action in an already open browser tab.
+`zotero-cli browser save` invokes the paired Connector's toolbar-save action in a browser tab.
+Pass `--url` to open the publication automatically, or `--tab-id` to resume an existing tab.
 The browser runs its translators and attachment download code with its own session, cookies, proxy handling and access prompts.
 Keep the publication open and complete any login or item-selection dialog in that browser.
 The CLI does not copy browser credentials or independently download the publisher PDF.
@@ -23,6 +24,8 @@ To run this checkout without replacing your installed CLI, use `uv run --project
 zotero-cli --json browser status
 zotero-cli --json browser tabs
 zotero-cli --json browser targets
+zotero-cli --json browser save --url https://doi.org/10.1063/1.4982698 --target L4
+zotero-cli --json browser inspect --tab-id 42
 zotero-cli --json browser save --tab-id 42 --target L4
 ```
 
@@ -37,6 +40,20 @@ The broker must be reachable as the same localhost port from both the browser an
 For Windows browsers with WSL, verify `browser status` first; if localhost forwarding is unavailable, run the broker and CLI on Windows.
 Do not expose the broker on a LAN interface.
 A second browser/profile uses a separate port and token file via `--port` and `--token-file` on each command.
+
+## Login and publisher checks
+
+The paired browser must already be running; `--url` opens the tab for you but does not launch the browser process.
+`browser open URL` opens a page without saving, and `browser inspect --tab-id ID` reports its current title, detection state and available translators.
+The Connector waits up to 30 seconds for page detection.
+Common challenge-page titles produce `state: needs_user_action`; a loading timeout produces `state: loading`.
+These are observations based on page state, not a diagnosis of subscription rights or the challenge provider.
+No item is created in these pre-save states.
+
+Complete any login or human-verification prompt in the paired browser, then retry `browser save --tab-id ID` on that same tab.
+The tool does not solve CAPTCHAs and does not import another browser profile's login session.
+A publisher can also challenge a PDF request after metadata is created; those results may contain a partial save receipt and require inspecting the Connector's visible prompt.
+Do not treat a fresh profile's failure as proof that your ordinary authenticated browser cannot download the paper.
 
 ## Results and retries
 
