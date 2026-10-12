@@ -234,12 +234,15 @@ def cmd_browser(args):
             server.serve_forever()
         return
     client = BridgeClient(token, args.port)
-    if getattr(args, "destination", None):
+    if getattr(args, "destination", None) or getattr(args, "ready_timeout", 30) != 30:
         capabilities = client.run({"action": "targets"}, args.timeout)["result"]
-        if not capabilities.get("ok") or "destination" not in capabilities.get("capabilities", []):
-            raise BridgeError("Connector does not support destination saves; update and reload it before saving")
+        required = {"destination"} if getattr(args, "destination", None) else set()
+        if getattr(args, "ready_timeout", 30) != 30:
+            required.add("ready_timeout")
+        if not capabilities.get("ok") or not required.issubset(capabilities.get("capabilities", [])):
+            raise BridgeError("Connector does not support the requested save options; update and reload it before saving")
     if args.browser_action == "batch":
-        result = save_batch(client, args.urls, args.target, args.interval, args.timeout, args.destination)
+        result = save_batch(client, args.urls, args.target, args.interval, args.timeout, args.destination, args.ready_timeout)
         if not result["ok"]:
             if _json_mode(args):
                 payload = _cli_json.envelope("browser", ok=False, error="Batch has deferred, failed or unattempted papers", code="browser_batch_incomplete")
@@ -266,6 +269,8 @@ def cmd_browser(args):
             request["background"] = args.background
         if args.browser_action == "save":
             request["close_on_success"] = args.close_on_success
+        if args.browser_action == "save":
+            request["ready_timeout"] = args.ready_timeout
         result = client.run(request, args.timeout)
     if result.get("result", {}).get("ok") is False:
         if _json_mode(args):
@@ -1531,6 +1536,8 @@ def build_parser() -> argparse.ArgumentParser:
             bp.add_argument("urls", nargs="+", help="Distinct new-publication URLs, after caller duplicate checks")
             bp.add_argument("--target", help="Require this initial selection; without destination, guard every save")
             bp.add_argument("--interval", type=float, default=2.0, help="Seconds between papers (0.5–60; default 2)")
+        if action in ("save", "batch"):
+            bp.add_argument("--ready-timeout", type=float, default=30, help="Page/translator readiness budget in seconds (0.5–120; default 30), separate from batch interval and job timeout")
         if action in ("save", "batch"):
             bp.add_argument("--destination", help="Move the new save session to this Connector L/C target, like the popup")
         if action in ("open", "save"):

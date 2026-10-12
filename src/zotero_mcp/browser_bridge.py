@@ -72,6 +72,10 @@ class Broker:
                 raise BridgeError(f"{action} requires an existing tab_id")
             if action == "open" and tab is not None:
                 raise BridgeError("open requires a URL")
+        if "ready_timeout" in data:
+            value = data["ready_timeout"]
+            if type(value) not in (int, float) or not math.isfinite(value) or not 0.5 <= value <= 120:
+                raise BridgeError("ready_timeout must be between 0.5 and 120 seconds")
         for option in ("background", "close_on_success", "defer_user_action"):
             if option in data and type(data[option]) is not bool:
                 raise BridgeError(f"{option} must be boolean")
@@ -232,7 +236,7 @@ class BridgeClient:
             time.sleep(0.25)
 
 
-def save_batch(client, urls, target=None, interval=2.0, timeout=120, destination=None):
+def save_batch(client, urls, target=None, interval=2.0, timeout=120, destination=None, ready_timeout=30):
     """Save prechecked new publications, deferring completed attention results.
 
     Never advance past an unresolved write. The caller owns library duplicate
@@ -252,7 +256,7 @@ def save_batch(client, urls, target=None, interval=2.0, timeout=120, destination
     for index, url in enumerate(urls):
         request = {"action": "save", "url": url, "target": target if index == 0 or not destination else None, "destination": destination,
                    "background": True, "close_on_success": True,
-                   "require_pdf": True, "defer_user_action": True}
+                   "require_pdf": True, "defer_user_action": True, "ready_timeout": ready_timeout}
         validator.submit(request)
         requests.append(request)
     report = {"ok": True, "completed": [], "deferred": [], "failed": [],

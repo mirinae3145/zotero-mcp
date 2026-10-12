@@ -193,3 +193,18 @@ def test_cli_refuses_old_connector_before_destination_save():
         with __import__("pytest").raises(BridgeError, match="update and reload"):
             cmd_browser(args)
         client.return_value.run.assert_called_once_with({"action": "targets"}, args.timeout)
+
+
+def test_readiness_timeout_validation_and_batch_forwarding():
+    from unittest.mock import Mock
+    from zotero_mcp.browser_bridge import Broker, save_batch
+    import pytest
+    for value in [False, "30", 0, 121, float("inf"), float("nan")]:
+        with pytest.raises(BridgeError, match="ready_timeout"):
+            Broker().submit({"action":"save", "tab_id":1, "ready_timeout":value})
+    client=Mock()
+    client.request.side_effect=lambda path, data=None: {"connected":True} if path=="/status" else {"id":"job"}
+    client.wait.return_value={"result":{"ok":True}}
+    save_batch(client,["https://example.org/paper"],target="L4",ready_timeout=45)
+    request=next(c.args[1] for c in client.request.call_args_list if c.args[0]=="/jobs")
+    assert request["ready_timeout"]==45

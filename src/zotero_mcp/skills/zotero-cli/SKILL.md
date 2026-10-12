@@ -230,7 +230,12 @@ The move uses native session identifiers, not a library search followed by a sep
 ### Batch and deferred user action
 
 For multiple new publications, first check duplicates in the intended library, then use `browser batch URL1 URL2 ... --target TARGET_ID`.
-The automatic pass uses background tabs, conservative close-on-success and a two-second gap (`--interval` can adjust it).
+The automatic pass uses background tabs, conservative close-on-success and a two-second gap (`--interval`, 0.5–60 seconds, after each result and before the next paper).
+Page/translator waiting is separate: `save` and `batch` accept `--ready-timeout` (default 30 seconds, 0.5–120).
+PDF saves wait for an actual translator/PDF, including after an initial empty detection result; they proceed immediately when ready.
+An exhausted empty detection returns `state: loading`, `waitingFor: translator`; do not assume a CAPTCHA or require human action without further evidence.
+Use a larger job `--timeout` to leave room for detection and PDF transfer, e.g. `--interval 5 --ready-timeout 60 --timeout 180`.
+These options apply to that invocation, not persistent settings. Individual `save` calls have no automatic inter-paper gap.
 Review `data.completed`, `deferred`, `failed`, `unattempted` and `stopped`; these batch lists replace the single-job `data.result` shape.
 Handle retained attention tabs together after the automatic pass, rather than interrupting the user for each paper as it arrives.
 Do not close successful tabs that were retained because the user touched them.
