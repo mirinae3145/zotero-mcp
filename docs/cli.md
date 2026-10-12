@@ -187,3 +187,7 @@ Add `-v` anywhere to see progress messages (e.g., which API calls are made):
 ```bash
 zotero-cli -v search "CRISPR"
 ```
+
+## Browser Connector saves
+
+Use [`zotero-cli browser`](browser-connector.md) to save an open publication tab through the paired browser Connector, including its authenticated PDF acquisition path.

@@ -11,6 +11,46 @@ but not follow a sub-command: `get --json metadata KEY` parses and
 `zotero-cli --json-schema` for the output contract.
 
 
+## `browser`
+
+### `browser serve`
+
+ - `--port` -- default `23120`
+ - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
+
+### `browser status`
+
+ - `--port` -- default `23120`
+ - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
+
+### `browser tabs`
+
+ - `--port` -- default `23120`
+ - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
+ - `--timeout` -- default `120`
+
+### `browser targets`
+
+ - `--port` -- default `23120`
+ - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
+ - `--timeout` -- default `120`
+
+### `browser save`
+
+ - `--port` -- default `23120`
+ - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
+ - `--timeout` -- default `120`
+ - `--tab-id` -- **required** -- Open browser tab from browser tabs
+ - `--target` -- Require this currently selected Connector target (L/C ID)
+ - `--allow-no-pdf` -- Allow a metadata-only save
+
+### `browser result`
+
+ - `--port` -- default `23120`
+ - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
+ - `--timeout` -- default `120`
+ - `<job_id>`
+
 ## `config`
 
  - `--show-secrets` -- Show full API keys

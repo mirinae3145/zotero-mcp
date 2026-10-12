@@ -223,6 +223,38 @@ def _read_backend():
 # Command handlers
 # ---------------------------------------------------------------------------
 
+def cmd_browser(args):
+    """Use the paired browser Connector, including its authenticated PDF path."""
+    from zotero_mcp.browser_bridge import BridgeClient, make_server, read_token
+    token = read_token(args.token_file, create=args.browser_action == "serve")
+    if args.browser_action == "serve":
+        with make_server(token, args.port) as server:
+            print(f"Browser bridge listening on 127.0.0.1:{server.server_port}; "
+                  f"pair the Connector using {args.token_file}", file=sys.stderr)
+            server.serve_forever()
+        return
+    client = BridgeClient(token, args.port)
+    if args.browser_action == "status":
+        result = client.request("/status")
+    elif args.browser_action == "result":
+        result = client.wait(args.job_id, args.timeout)
+    else:
+        request = {"action": args.browser_action}
+        if args.browser_action == "save":
+            request.update(tab_id=args.tab_id, target=args.target, require_pdf=not args.allow_no_pdf)
+        result = client.run(request, args.timeout)
+    if result.get("result", {}).get("ok") is False:
+        if _json_mode(args):
+            payload = _cli_json.envelope("browser", ok=False,
+                error=result["result"].get("error", "Browser save failed"), code="browser_save_failed")
+            payload["data"] = result  # Keep partial save/session evidence on failure.
+            print(json.dumps(payload, ensure_ascii=False))
+        else:
+            print(json.dumps(result, ensure_ascii=False, indent=2), file=sys.stderr)
+        sys.exit(1)
+    _out(args, "browser", data=result, text=json.dumps(result, ensure_ascii=False, indent=2))
+
+
 def cmd_config(args):
     import os
     setup_zotero_environment()
@@ -1461,6 +1493,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser = add_parser
 
+    # Browser Connector transport
+    browser_p = sub.add_parser("browser", help="Save through the paired browser Zotero Connector")
+    browser_sub = browser_p.add_subparsers(dest="browser_action", required=True)
+    for action in ("serve", "status", "tabs", "targets", "save", "result"):
+        bp = browser_sub.add_parser(action)
+        bp.add_argument("--json", action="store_true", dest="json_out", default=argparse.SUPPRESS)
+        bp.add_argument("--port", type=int, default=23120)
+        bp.add_argument("--token-file", default="~/.config/zotero-mcp/browser-bridge.token")
+        if action not in ("serve", "status"):
+            bp.add_argument("--timeout", type=float, default=120)
+        if action == "save":
+            bp.add_argument("--tab-id", type=int, required=True, help="Open browser tab from browser tabs")
+            bp.add_argument("--target", help="Require this currently selected Connector target (L/C ID)")
+            bp.add_argument("--allow-no-pdf", action="store_true", help="Allow a metadata-only save")
+        if action == "result":
+            bp.add_argument("job_id")
+
     # config
     cfg_p = sub.add_parser("config", help="Show current Zotero configuration")
     cfg_p.add_argument("--show-secrets", action="store_true", help="Show full API keys")
@@ -1852,6 +1901,7 @@ def build_parser() -> argparse.ArgumentParser:
 # ---------------------------------------------------------------------------
 
 _CMD_MAP = {
+    "browser": cmd_browser,
     "config": cmd_config,
     "search": cmd_search, "s": cmd_search,
     "get": cmd_get, "g": cmd_get,
@@ -1911,6 +1961,8 @@ Commands returning structured data
   notes list            data.notes[] -- with both .text and .html
   config                data.settings
   plugin                data.path
+  browser               connection status or job/Connector receipt; failed jobs
+                        retain partial receipts in data alongside error
 
 Every other command returns {"text": "<the markdown it would have
 printed>"}. That is deliberate: those commands' answers really are status
