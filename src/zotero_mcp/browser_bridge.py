@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hmac
 import json
+import math
 import os
 import re
 import secrets
@@ -71,7 +72,7 @@ class Broker:
                 raise BridgeError(f"{action} requires an existing tab_id")
             if action == "open" and tab is not None:
                 raise BridgeError("open requires a URL")
-        for option in ("background", "close_on_success"):
+        for option in ("background", "close_on_success", "defer_user_action"):
             if option in data and type(data[option]) is not bool:
                 raise BridgeError(f"{option} must be boolean")
         if data.get("background") and (action not in ("open", "save") or not data.get("url")):
@@ -221,3 +222,61 @@ class BridgeClient:
                 raise BridgeError(f"Browser job {job_id} is {job['state']}; its save outcome is not yet known. "
                                   f"Use browser result {job_id}; do not submit another save.")
             time.sleep(0.25)
+
+
+def save_batch(client, urls, target, interval=2.0, timeout=120):
+    """Save prechecked new publications, deferring completed attention results.
+
+    Never advance past an unresolved write. The caller owns library duplicate
+    checks and the later user-interaction phase; this function never focuses tabs.
+    """
+    if not math.isfinite(interval) or interval < 0.5 or interval > 60:
+        raise BridgeError("Batch interval must be between 0.5 and 60 seconds")
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise BridgeError("Batch timeout must be positive and finite")
+    if not urls or len(urls) != len(set(urls)):
+        raise BridgeError("Provide a nonempty list of distinct publication URLs")
+    # Validate the complete plan before the first side effect.
+    requests = []
+    validator = Broker()
+    for url in urls:
+        request = {"action": "save", "url": url, "target": target,
+                   "background": True, "close_on_success": True,
+                   "require_pdf": True, "defer_user_action": True}
+        validator.submit(request)
+        requests.append(request)
+    report = {"ok": True, "completed": [], "deferred": [], "failed": [],
+              "unattempted": [], "stopped": False}
+    for index, request in enumerate(requests):
+        parsed = urlsplit(request["url"])
+        entry = {"url": parsed._replace(query="", fragment="").geturl()}
+        try:
+            if index:
+                time.sleep(interval)
+            if not client.request("/status")["connected"]:
+                raise BridgeError("Connector is not polling; batch stopped")
+            job = client.request("/jobs", request)
+            entry["job_id"] = job["id"]
+            job = client.wait(job["id"], timeout)
+            result = job["result"]
+            entry["result"] = result
+            if result["ok"]:
+                report["completed"].append(entry)
+            elif result.get("state") in ("needs_user_action", "loading"):
+                report["deferred"].append(entry)
+            else:
+                report["failed"].append(entry)
+                # A confirmed partial desktop receipt is terminal for this pass.
+                # Unknown outcomes and shared setup/destination blockers stop it.
+                if not result.get("desktopSaved") or "target changed" in result.get("error", "").lower():
+                    report["stopped"] = True
+        except BridgeError as error:
+            entry["error"] = str(error)
+            report["failed"].append(entry)
+            report["stopped"] = True
+        if report["stopped"]:
+            report["unattempted"] = [urlsplit(r["url"])._replace(query="", fragment="").geturl()
+                                     for r in requests[index + 1:]]
+            break
+    report["ok"] = not (report["deferred"] or report["failed"] or report["unattempted"])
+    return report

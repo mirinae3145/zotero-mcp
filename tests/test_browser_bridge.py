@@ -109,5 +109,52 @@ class BrowserBridgeTests(unittest.TestCase):
         self.assertEqual(broker.submit({"action": "focus", "tab_id": 1})["request"]["tab_id"], 1)
 
 
+class BrowserBatchTests(unittest.TestCase):
+    def test_batch_defers_attention_without_focus_and_paces_saves(self):
+        from unittest.mock import Mock, patch
+        from zotero_mcp.browser_bridge import save_batch
+        client = Mock()
+        client.request.side_effect = lambda path, data=None: {"connected": True} if path == "/status" else {"id": data["url"]}
+        results = [{"ok": False, "state": "needs_user_action", "tab": {"id": 1}},
+                   {"ok": True, "tab": {"id": 2, "closed": True}},
+                   {"ok": False, "desktopSaved": True, "items": [], "tab": {"id": 3}}]
+        client.wait.side_effect = [{"result": r} for r in results]
+        with patch("zotero_mcp.browser_bridge.time.sleep") as sleep:
+            report = save_batch(client, ["https://example.org/a", "https://example.org/b", "https://example.org/c"], "L4")
+        self.assertEqual(sleep.call_count, 2)
+        self.assertEqual([len(report[k]) for k in ["completed", "deferred", "failed", "unattempted"]], [1, 1, 1, 0])
+        self.assertFalse(report["stopped"])
+        for call in client.request.call_args_list:
+            if call.args[0] == "/jobs":
+                self.assertTrue(call.args[1]["background"])
+                self.assertTrue(call.args[1]["close_on_success"])
+                self.assertTrue(call.args[1]["defer_user_action"])
+                self.assertEqual(call.args[1]["action"], "save")
+
+    def test_batch_timeout_retains_job_and_stops_without_resubmission(self):
+        from unittest.mock import Mock
+        from zotero_mcp.browser_bridge import save_batch
+        client = Mock()
+        client.request.side_effect = [{"connected": True}, {"id": "pending"}]
+        client.wait.side_effect = BridgeError("pending outcome unknown")
+        report = save_batch(client, ["https://example.org/a", "https://example.org/b"], "L4")
+        self.assertTrue(report["stopped"])
+        self.assertEqual(report["failed"][0]["job_id"], "pending")
+        self.assertEqual(report["unattempted"], ["https://example.org/b"])
+        self.assertEqual(client.request.call_count, 2)
+
+    def test_batch_validates_whole_plan_before_writing(self):
+        from unittest.mock import Mock
+        from zotero_mcp.browser_bridge import save_batch
+        for urls, interval in [(["https://example.org/a", "file:///bad"], 2),
+                               (["https://example.org/a"] * 2, 2),
+                               (["https://example.org/a"], float("nan")),
+                               (["https://example.org/a"], 0)]:
+            client = Mock()
+            with self.assertRaises(BridgeError):
+                save_batch(client, urls, "L4", interval)
+            client.request.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

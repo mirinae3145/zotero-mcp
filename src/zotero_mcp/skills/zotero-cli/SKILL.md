@@ -204,6 +204,21 @@ Allow the current load to settle, or wait for required login/human verification,
 Challenge-title detection is a heuristic; it does not establish the cause of a block or guarantee CAPTCHA handling.
 The tool does not solve CAPTCHAs.
 
+### Batch and deferred user action
+
+For multiple new publications, first check duplicates in the intended library, then use `browser batch URL1 URL2 ... --target TARGET_ID`.
+The automatic pass uses background tabs, conservative close-on-success and a two-second gap (`--interval` can adjust it).
+Review `data.completed`, `deferred`, `failed`, `unattempted` and `stopped`; these batch lists replace the single-job `data.result` shape.
+Handle retained attention tabs together after the automatic pass, rather than interrupting the user for each paper as it arrives.
+Do not close successful tabs that were retained because the user touched them.
+Inspect partial saves before retrying; a timeout/unknown outcome stops new submissions and preserves its job ID.
+While a job is still running, the serialized broker cannot execute a queued `focus`/`inspect`; ask the user to visit the tab directly and recover with `result`.
+Unexpected prompts inside a translator/download can still stop a batch; preflight deferral is not cancellation of a running save.
+
+CLI library selection and the Connector's desktop selection are independent.
+Before duplicate checks and after saving, use `library list` / `library switch` to query the intended library, and `browser targets` to verify the save destination.
+Do not pass a Connector desktop `libraryID` as a web group ID; resolve the group ID from the library listing.
+
 ### Verify the resulting work
 
 For browser jobs, inspect `data.result` as well as top-level `ok`.

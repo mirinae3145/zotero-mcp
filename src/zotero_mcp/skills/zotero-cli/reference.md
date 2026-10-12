@@ -68,6 +68,15 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--target` -- Require this currently selected Connector target (L/C ID)
  - `--allow-no-pdf` -- Allow a metadata-only save
 
+### `browser batch`
+
+ - `--port` -- default `23120`
+ - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
+ - `--timeout` -- default `120`
+ - `<urls>` -- Distinct new-publication URLs, after caller duplicate checks
+ - `--target` -- **required** -- Require this selected Zotero target throughout the batch
+ - `--interval` -- default `2.0` -- Seconds between papers (0.5–60; default 2)
+
 ### `browser result`
 
  - `--port` -- default `23120`

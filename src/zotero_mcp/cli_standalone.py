@@ -225,7 +225,7 @@ def _read_backend():
 
 def cmd_browser(args):
     """Use the paired browser Connector, including its authenticated PDF path."""
-    from zotero_mcp.browser_bridge import BridgeClient, make_server, read_token
+    from zotero_mcp.browser_bridge import BridgeClient, make_server, read_token, save_batch
     token = read_token(args.token_file, create=args.browser_action == "serve")
     if args.browser_action == "serve":
         with make_server(token, args.port) as server:
@@ -234,6 +234,18 @@ def cmd_browser(args):
             server.serve_forever()
         return
     client = BridgeClient(token, args.port)
+    if args.browser_action == "batch":
+        result = save_batch(client, args.urls, args.target, args.interval, args.timeout)
+        if not result["ok"]:
+            if _json_mode(args):
+                payload = _cli_json.envelope("browser", ok=False, error="Batch has deferred, failed or unattempted papers", code="browser_batch_incomplete")
+                payload["data"] = result
+                print(json.dumps(payload, ensure_ascii=False))
+            else:
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+            sys.exit(1)
+        _out(args, "browser", data=result, text=json.dumps(result, ensure_ascii=False, indent=2))
+        return
     if args.browser_action == "status":
         result = client.request("/status")
     elif args.browser_action == "result":
@@ -1504,13 +1516,17 @@ def build_parser() -> argparse.ArgumentParser:
     # Browser Connector transport
     browser_p = sub.add_parser("browser", help="Save through the paired browser Zotero Connector")
     browser_sub = browser_p.add_subparsers(dest="browser_action", required=True)
-    for action in ("serve", "status", "tabs", "targets", "open", "inspect", "focus", "save", "result"):
+    for action in ("serve", "status", "tabs", "targets", "open", "inspect", "focus", "save", "batch", "result"):
         bp = browser_sub.add_parser(action)
         bp.add_argument("--json", action="store_true", dest="json_out", default=argparse.SUPPRESS)
         bp.add_argument("--port", type=int, default=23120)
         bp.add_argument("--token-file", default="~/.config/zotero-mcp/browser-bridge.token")
         if action not in ("serve", "status"):
             bp.add_argument("--timeout", type=float, default=120)
+        if action == "batch":
+            bp.add_argument("urls", nargs="+", help="Distinct new-publication URLs, after caller duplicate checks")
+            bp.add_argument("--target", required=True, help="Require this selected Zotero target throughout the batch")
+            bp.add_argument("--interval", type=float, default=2.0, help="Seconds between papers (0.5–60; default 2)")
         if action in ("open", "save"):
             bp.add_argument("--background", action="store_true", help="Open the URL in an inactive tab without focusing its window")
         if action == "save":
