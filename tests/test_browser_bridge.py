@@ -84,7 +84,7 @@ class BrowserBridgeTests(unittest.TestCase):
         self.assertEqual(job["state"],"queued")
 
     def test_invalid_actions_and_tab_ids(self):
-        for request in [{"action": "eval"}, {"action": "save", "tab_id": True},
+        for request in [{"action": "eval"}, {"action": "save", "url": "https://example.org", "destination": "group123"}, {"action": "save", "tab_id": True},
                         {"action": "save", "tab_id": -1},
                         {"action": "save", "tab_id": 1, "target": "6181240"}]:
             with self.assertRaises(BridgeError):
@@ -158,3 +158,38 @@ class BrowserBatchTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_destination_batch_drops_initial_guard_after_first_paper():
+    from unittest.mock import Mock, patch
+    from zotero_mcp.browser_bridge import save_batch
+    client = Mock()
+    client.request.side_effect = lambda path, data=None: {"connected": True} if path == "/status" else {"id": "job"}
+    client.wait.return_value = {"result": {"ok": True, "destinationApplied": True}}
+    with patch("zotero_mcp.browser_bridge.time.sleep"):
+        result = save_batch(client, ["https://example.org/a", "https://example.org/b"], "L4", destination="L5")
+    requests = [c.args[1] for c in client.request.call_args_list if c.args[0] == "/jobs"]
+    assert result["ok"]
+    assert [r["target"] for r in requests] == ["L4", None]
+    assert all(r["destination"] == "L5" for r in requests)
+
+
+def test_unconfirmed_destination_receipt_is_not_success():
+    client = BridgeClient("test")
+    client.request = lambda *_: {"state": "done", "request": {"destination": "L5"},
+        "result": {"ok": True, "target": "L4", "sessionID": "partial"}}
+    result = client.wait("job", 1)["result"]
+    assert result["ok"] is False
+    assert result["destinationApplied"] is False
+    assert result["sessionID"] == "partial"
+
+
+def test_cli_refuses_old_connector_before_destination_save():
+    from unittest.mock import patch
+    from zotero_mcp.cli_standalone import build_parser, cmd_browser
+    args = build_parser().parse_args(["browser", "save", "--url", "https://example.org/paper", "--destination", "L5"])
+    with patch("zotero_mcp.browser_bridge.read_token", return_value="test"), patch("zotero_mcp.browser_bridge.BridgeClient") as client:
+        client.return_value.run.return_value = {"result": {"ok": True, "targets": []}}
+        with __import__("pytest").raises(BridgeError, match="update and reload"):
+            cmd_browser(args)
+        client.return_value.run.assert_called_once_with({"action": "targets"}, args.timeout)

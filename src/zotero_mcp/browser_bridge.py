@@ -80,9 +80,10 @@ class Broker:
         if data.get("close_on_success") and (action != "save" or not data.get("url") or not data.get("background")):
             raise BridgeError("close_on_success requires a background save URL")
         if action == "save":
-            target = data.get("target")
-            if target is not None and (not isinstance(target, str) or re.fullmatch(r"[LC][1-9][0-9]*", target) is None):
-                raise BridgeError("target must be a Connector target ID from browser targets")
+            for field in ("target", "destination"):
+                target = data.get(field)
+                if target is not None and (not isinstance(target, str) or re.fullmatch(r"[LC][1-9][0-9]*", target) is None):
+                    raise BridgeError(f"{field} must be a Connector target ID from browser targets")
         with self.lock:
             # Bound memory without silently evicting an unresolved save result.
             if len(self.jobs) >= 1000:
@@ -217,6 +218,13 @@ class BridgeClient:
         while True:
             job = self.request("/jobs/" + job_id)
             if job["state"] == "done":
+                destination = job.get("request", {}).get("destination")
+                result = job["result"]
+                if destination and result.get("ok") and (
+                    result.get("destinationApplied") is not True or result.get("target") != destination
+                ):
+                    job["result"] = {**result, "ok": False, "destinationApplied": False,
+                        "error": "Destination was not confirmed; inspect saved items and update both forks before retrying"}
                 return job
             if time.monotonic() >= deadline:
                 raise BridgeError(f"Browser job {job_id} is {job['state']}; its save outcome is not yet known. "
@@ -224,12 +232,14 @@ class BridgeClient:
             time.sleep(0.25)
 
 
-def save_batch(client, urls, target, interval=2.0, timeout=120):
+def save_batch(client, urls, target=None, interval=2.0, timeout=120, destination=None):
     """Save prechecked new publications, deferring completed attention results.
 
     Never advance past an unresolved write. The caller owns library duplicate
     checks and the later user-interaction phase; this function never focuses tabs.
     """
+    if not target and not destination:
+        raise BridgeError("Batch requires a target guard or destination")
     if not math.isfinite(interval) or interval < 0.5 or interval > 60:
         raise BridgeError("Batch interval must be between 0.5 and 60 seconds")
     if not math.isfinite(timeout) or timeout <= 0:
@@ -239,8 +249,8 @@ def save_batch(client, urls, target, interval=2.0, timeout=120):
     # Validate the complete plan before the first side effect.
     requests = []
     validator = Broker()
-    for url in urls:
-        request = {"action": "save", "url": url, "target": target,
+    for index, url in enumerate(urls):
+        request = {"action": "save", "url": url, "target": target if index == 0 or not destination else None, "destination": destination,
                    "background": True, "close_on_success": True,
                    "require_pdf": True, "defer_user_action": True}
         validator.submit(request)
@@ -268,7 +278,7 @@ def save_batch(client, urls, target, interval=2.0, timeout=120):
                 report["failed"].append(entry)
                 # A confirmed partial desktop receipt is terminal for this pass.
                 # Unknown outcomes and shared setup/destination blockers stop it.
-                if not result.get("desktopSaved") or "target changed" in result.get("error", "").lower():
+                if result.get("destinationApplied") is False or not result.get("desktopSaved") or "target changed" in result.get("error", "").lower():
                     report["stopped"] = True
         except BridgeError as error:
             entry["error"] = str(error)

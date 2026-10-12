@@ -225,7 +225,7 @@ def _read_backend():
 
 def cmd_browser(args):
     """Use the paired browser Connector, including its authenticated PDF path."""
-    from zotero_mcp.browser_bridge import BridgeClient, make_server, read_token, save_batch
+    from zotero_mcp.browser_bridge import BridgeClient, BridgeError, make_server, read_token, save_batch
     token = read_token(args.token_file, create=args.browser_action == "serve")
     if args.browser_action == "serve":
         with make_server(token, args.port) as server:
@@ -234,8 +234,12 @@ def cmd_browser(args):
             server.serve_forever()
         return
     client = BridgeClient(token, args.port)
+    if getattr(args, "destination", None):
+        capabilities = client.run({"action": "targets"}, args.timeout)["result"]
+        if not capabilities.get("ok") or "destination" not in capabilities.get("capabilities", []):
+            raise BridgeError("Connector does not support destination saves; update and reload it before saving")
     if args.browser_action == "batch":
-        result = save_batch(client, args.urls, args.target, args.interval, args.timeout)
+        result = save_batch(client, args.urls, args.target, args.interval, args.timeout, args.destination)
         if not result["ok"]:
             if _json_mode(args):
                 payload = _cli_json.envelope("browser", ok=False, error="Batch has deferred, failed or unattempted papers", code="browser_batch_incomplete")
@@ -253,7 +257,7 @@ def cmd_browser(args):
     else:
         request = {"action": args.browser_action}
         if args.browser_action == "save":
-            request.update(tab_id=args.tab_id, url=args.url, target=args.target, require_pdf=not args.allow_no_pdf)
+            request.update(tab_id=args.tab_id, url=args.url, target=args.target, destination=args.destination, require_pdf=not args.allow_no_pdf)
         elif args.browser_action == "open":
             request["url"] = args.url
         elif args.browser_action in ("inspect", "focus"):
@@ -1525,8 +1529,10 @@ def build_parser() -> argparse.ArgumentParser:
             bp.add_argument("--timeout", type=float, default=120)
         if action == "batch":
             bp.add_argument("urls", nargs="+", help="Distinct new-publication URLs, after caller duplicate checks")
-            bp.add_argument("--target", required=True, help="Require this selected Zotero target throughout the batch")
+            bp.add_argument("--target", help="Require this initial selection; without destination, guard every save")
             bp.add_argument("--interval", type=float, default=2.0, help="Seconds between papers (0.5–60; default 2)")
+        if action in ("save", "batch"):
+            bp.add_argument("--destination", help="Move the new save session to this Connector L/C target, like the popup")
         if action in ("open", "save"):
             bp.add_argument("--background", action="store_true", help="Open the URL in an inactive tab without focusing its window")
         if action == "save":
