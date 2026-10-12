@@ -1,0 +1,4 @@
+[submodule "zotero-connectors"]
+	path = zotero-connectors
+	url = git@github.com:mirinae3145/zotero-connectors.git
+	branch = feat-browser-cli-save

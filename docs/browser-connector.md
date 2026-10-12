@@ -10,6 +10,20 @@ The CLI does not copy browser credentials or independently download the publishe
 
 Use a build of the Connector fork that includes Browser CLI, and run the CLI from this checkout or install this fork's Python package.
 Ordinary released Connectors do not implement this protocol.
+The matching Connector source is included as the [`zotero-connectors/` submodule](../zotero-connectors/README.md).
+The submodule pins a compatible Connector commit; it is not a Python build dependency and is excluded from Python distributions.
+The CLI and Connector retain independent version numbers, builds and releases.
+Only when building the extension from this checkout, initialize it and its build dependencies from the repository root:
+
+```sh
+git submodule update --init -- zotero-connectors
+git -C zotero-connectors submodule update --init
+```
+
+Then follow the [Connector build instructions](../zotero-connectors/README.md#building).
+`git submodule update --init -- zotero-connectors` restores the pinned revision after a clone or parent checkout update.
+When changing the browser protocol, verify the CLI and Connector together before updating the parent repository's submodule pointer.
+Updating that pointer does not rebuild or reload an installed extension, reinstall the CLI, or restart the bridge.
 To run this checkout without replacing your installed CLI, use `uv run --project /path/to/zotero-mcp --no-dev zotero-cli` in place of `zotero-cli` below.
 
 1. Start Zotero desktop and select the library or collection to save into.

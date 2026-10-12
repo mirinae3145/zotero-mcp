@@ -65,6 +65,9 @@ One package, `zotero-mcp-server`, ships all three. Pick the one that fits where 
 ## Browser Connector saves in this fork
 
 Use [`zotero-cli browser`](docs/browser-connector.md) to save an open publication tab through the paired Connector fork, with the browser's session and attachment-download path.
+The matching [Connector fork](zotero-connectors/README.md) is tracked in the `zotero-connectors/` Git submodule on `feat-browser-cli-save` to pin a compatible source revision.
+The Python package and browser extension keep separate build, installation and release workflows.
+See the [browser setup guide](docs/browser-connector.md#setup) for checkout and build preparation.
 
 ## Quick start
 
