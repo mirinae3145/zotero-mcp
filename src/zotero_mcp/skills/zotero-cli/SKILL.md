@@ -168,12 +168,23 @@ A missing command or connection is a setup blocker, not evidence that a paper is
 | `browser status` | Check `data.connected` before dispatching browser work |
 | `browser tabs`, `browser targets` | Get actual tab IDs and the selected Zotero target |
 | `browser open URL` | Open a publication without saving |
+| `browser focus --tab-id ID` | Explicitly show a retained tab when user interaction is needed |
 | `browser inspect --tab-id ID` | Inspect title, detection state and translators of an existing tab |
 | `browser save --url URL` | Open a publication tab and invoke the toolbar save |
 | `browser save --tab-id ID` | Save or resume an already open tab |
 | `browser result JOB_ID` | Retrieve the outcome of the original job without repeating its save |
 
 `--url` opens a tab in the running paired browser; it does not launch the browser process.
+For unobtrusive acquisition in a running browser, use `save --url URL --background --close-on-success` when appropriate to the user's workflow.
+Both forks must support these options; older Connectors may ignore them.
+Only a successful save's own newly created background tab is eligible for automatic cleanup.
+Check `tab.closed` and `tab.closeReason`; failure, uncertainty or user interaction preserves the tab.
+Existing tabs and resumed `--tab-id` saves are never automatically closed.
+After a failure, inspect the retained tab and use `browser focus --tab-id ID` when user action is needed; do not open another copy of the URL.
+The caller decides when to notify or focus, while the Connector only executes the requested action.
+CAPTCHA extensions are optional environment components, not a dependency or guarantee of automatic challenge completion.
+Storage success and tab cleanup do not replace correct-paper/PDF verification.
+
 Use the browser profile appropriate for the required access; a new test profile does not inherit another profile's login session.
 `--target` checks the selected destination and does not select or move it.
 Its `L`/`C` identifiers are Connector desktop tree IDs, not web API library/group IDs or item keys.

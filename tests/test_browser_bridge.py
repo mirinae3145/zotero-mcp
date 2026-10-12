@@ -90,6 +90,24 @@ class BrowserBridgeTests(unittest.TestCase):
             with self.assertRaises(BridgeError):
                 self.server.broker.submit(request)
 
+    def test_background_lifecycle_contract(self):
+        broker = self.server.broker
+        for request in [
+            {"action": "save", "url": "https://example.org", "background": "yes"},
+            {"action": "save", "tab_id": 1, "close_on_success": True},
+            {"action": "save", "url": "https://example.org", "close_on_success": True},
+            {"action": "focus", "url": "https://example.org"},
+            {"action": "open", "url": "https://example.org", "close_on_success": True},
+        ]:
+            with self.assertRaises(BridgeError):
+                broker.submit(request)
+        request = {"action": "save", "url": "https://example.org", "background": True, "close_on_success": True}
+        job = broker.submit(request)
+        self.assertEqual(broker.poll("test")["request"], request)
+        broker.finish(job["id"], "test", {"ok": True, "tab": {"closed": True}})
+        self.assertTrue(broker.get(job["id"])["result"]["tab"]["closed"])
+        self.assertEqual(broker.submit({"action": "focus", "tab_id": 1})["request"]["tab_id"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

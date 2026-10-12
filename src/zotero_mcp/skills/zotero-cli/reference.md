@@ -40,9 +40,17 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--port` -- default `23120`
  - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
  - `--timeout` -- default `120`
+ - `--background` -- Open the URL in an inactive tab without focusing its window
  - `<url>` -- HTTP(S) publication URL to open in the paired browser
 
 ### `browser inspect`
+
+ - `--port` -- default `23120`
+ - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
+ - `--timeout` -- default `120`
+ - `--tab-id` -- **required**
+
+### `browser focus`
 
  - `--port` -- default `23120`
  - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
@@ -54,6 +62,8 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--port` -- default `23120`
  - `--token-file` -- default `~/.config/zotero-mcp/browser-bridge.token`
  - `--timeout` -- default `120`
+ - `--background` -- Open the URL in an inactive tab without focusing its window
+ - `--close-on-success` -- Close this request's background URL tab after confirmed save; preserve failures and user-touched tabs
  - `--tab-id` / `--url` -- mutually exclusive
  - `--target` -- Require this currently selected Connector target (L/C ID)
  - `--allow-no-pdf` -- Allow a metadata-only save

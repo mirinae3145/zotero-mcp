@@ -53,9 +53,9 @@ class Broker:
 
     def submit(self, data):
         action = data.get("action")
-        if action not in ("tabs", "targets", "open", "inspect", "save"):
+        if action not in ("tabs", "targets", "open", "inspect", "focus", "save"):
             raise BridgeError("Unknown browser action")
-        if action in ("open", "inspect", "save"):
+        if action in ("open", "inspect", "focus", "save"):
             url, tab = data.get("url"), data.get("tab_id")
             if (url is None) == (tab is None):
                 raise BridgeError("Provide exactly one URL or tab_id")
@@ -67,10 +67,17 @@ class Broker:
                     raise BridgeError("URL must be HTTP(S), without embedded credentials")
             elif type(tab) is not int or tab < 0:
                 raise BridgeError("tab_id must be a non-negative integer from browser tabs")
-            if action == "inspect" and url is not None:
-                raise BridgeError("inspect requires an existing tab_id")
+            if action in ("inspect", "focus") and url is not None:
+                raise BridgeError(f"{action} requires an existing tab_id")
             if action == "open" and tab is not None:
                 raise BridgeError("open requires a URL")
+        for option in ("background", "close_on_success"):
+            if option in data and type(data[option]) is not bool:
+                raise BridgeError(f"{option} must be boolean")
+        if data.get("background") and (action not in ("open", "save") or not data.get("url")):
+            raise BridgeError("background requires an open/save URL")
+        if data.get("close_on_success") and (action != "save" or not data.get("url") or not data.get("background")):
+            raise BridgeError("close_on_success requires a background save URL")
         if action == "save":
             target = data.get("target")
             if target is not None and (not isinstance(target, str) or re.fullmatch(r"[LC][1-9][0-9]*", target) is None):
