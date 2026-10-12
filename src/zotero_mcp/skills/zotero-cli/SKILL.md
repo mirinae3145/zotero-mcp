@@ -1,6 +1,6 @@
 ---
 name: zotero-cli
-description: Read and write a Zotero library from the shell with the `zotero-cli` command - search papers by keyword or meaning, read PDF full text and page ranges, get and set metadata, manage collections, tags, notes and annotations, add items by DOI/URL/ISBN, and export bibliographies. Use whenever the user asks about their Zotero library, references, citations, papers they have saved, or their reading notes.
+description: Read and write a Zotero library from the shell with the `zotero-cli` command - search papers by keyword or meaning, read PDF full text and page ranges, get and set metadata, manage collections, tags, notes and annotations, add items by DOI/URL/ISBN or a paired browser Connector, and export bibliographies. Use whenever the user asks about their Zotero library, references, citations, papers they have saved, or their reading notes.
 ---
 
 # Zotero from the shell
@@ -16,9 +16,10 @@ Check it is set up before the first real call:
 zotero-cli config          # prints the resolved Zotero settings
 ```
 
-If that fails, Zotero is not reachable. Local mode needs the Zotero desktop
-app running with its local API enabled; web mode needs `ZOTERO_API_KEY` and
-`ZOTERO_LIBRARY_ID`. Say so rather than guessing at library contents.
+`config` reports settings; it does not prove that Zotero or a browser bridge is reachable.
+Use the relevant library read or `browser status` to check the path you will use.
+Local mode needs Zotero desktop running with its local API enabled; web mode needs `ZOTERO_API_KEY` and `ZOTERO_LIBRARY_ID`.
+Distinguish a setup failure from a completed library query.
 
 ## Always pass --json when you will read the output
 
@@ -113,7 +114,8 @@ Keep going until `data.count` is less than `--limit`.
 
 ## Writing
 
-Write commands report what they did as text under `data.text`.
+Most library write commands report what they did as text under `data.text`.
+Browser commands return structured job results; failed saves can retain partial results under `data`.
 
 ```bash
 zotero-cli add doi 10.1038/s41586-021-03819-2 -c "Reading List"
@@ -131,13 +133,80 @@ kept to the note editor's tags, so a note read with `notes list --raw-html`,
 edited and written back with `notes update` keeps its citations and images;
 `notes update --append` adds to the end.
 
-`add` is idempotent by default: re-running files the existing item into the
-named collection rather than creating a duplicate. Use `--if-exists skip` to
-never touch an existing item.
-
 Before a destructive change (`delete`, `duplicates merge`, a `batch` over
 many items), confirm with the user and show what will be affected. `delete
 item` refuses notes unless `--allow-note` is passed.
+
+## Registration and PDF acquisition paths
+
+Choose a path according to the requested workflow, available access and applicable user instructions.
+The skill does not prescribe a universal acquisition priority.
+
+| Path | Commands | Behavior |
+| --- | --- | --- |
+| Identifier or page registration | `add doi`, `add url`, `add isbn` | Metadata lookup; DOI/URL PDF discovery uses HTTP and available open-access sources, without the browser's login session |
+| Browser Connector | `browser save` | Runs the paired browser's toolbar-save path, including its translators, cookies and attachment handling |
+| Local file or existing item | `add file`, `attach` | Import a file or add an attachment to an existing item; a linked URL is not a stored PDF |
+
+Check the intended library for an existing DOI/ISBN and title before creating an item.
+`add` reuses existing items by default; `--if-exists skip` leaves them unchanged.
+Repeated DOI registration does not repair a missing PDF.
+Browser saves preserve toolbar behavior and are not generally idempotent across reloads or different tabs.
+Reuse existing items and inspect their attachments rather than retrying registration as a repair strategy.
+
+### Browser workflow
+
+Check `zotero-cli browser --help` before relying on this feature: the CLI and Connector must both support this fork's bridge.
+A running `browser serve` process and a paired, enabled Connector are prerequisites.
+The broker and browser must share the loopback address; preserve the configured `--port` and `--token-file` on every related command.
+Pairing happens in the Connector's Browser CLI preferences using the broker's token file; do not print the token in reports.
+A missing command or connection is a setup blocker, not evidence that a paper is unavailable.
+
+| Command | Purpose |
+| --- | --- |
+| `browser serve` | Run the local broker; reuse an existing broker rather than starting competing instances |
+| `browser status` | Check `data.connected` before dispatching browser work |
+| `browser tabs`, `browser targets` | Get actual tab IDs and the selected Zotero target |
+| `browser open URL` | Open a publication without saving |
+| `browser inspect --tab-id ID` | Inspect title, detection state and translators of an existing tab |
+| `browser save --url URL` | Open a publication tab and invoke the toolbar save |
+| `browser save --tab-id ID` | Save or resume an already open tab |
+| `browser result JOB_ID` | Retrieve the outcome of the original job without repeating its save |
+
+`--url` opens a tab in the running paired browser; it does not launch the browser process.
+Use the browser profile appropriate for the required access; a new test profile does not inherit another profile's login session.
+`--target` checks the selected destination and does not select or move it.
+Its `L`/`C` identifiers are Connector desktop tree IDs, not web API library/group IDs or item keys.
+A shared destination or bridge blocker should be resolved once before continuing a batch.
+
+```bash
+zotero-cli --json browser status
+zotero-cli --json browser targets
+zotero-cli --json browser save --url https://doi.org/10.1038/s41586-021-03819-2 --target L4
+zotero-cli --json browser inspect --tab-id 42
+zotero-cli --json browser result JOB_ID --timeout 180
+```
+
+Use observed IDs; `L4` and `42` are examples.
+A `loading` or `needs_user_action` result identifies a tab to inspect, not a reason to open the same URL repeatedly.
+Allow the current load to settle, or wait for required login/human verification, then resume that tab with `--tab-id`.
+Challenge-title detection is a heuristic; it does not establish the cause of a block or guarantee CAPTCHA handling.
+The tool does not solve CAPTCHAs.
+
+### Verify the resulting work
+
+For browser jobs, inspect `data.result` as well as top-level `ok`.
+By default a save needs a confirmed stored PDF for each returned item; `--allow-no-pdf` explicitly permits metadata-only saves.
+A failure may still have created metadata or an attachment.
+A timeout does not cancel the original job: recover it with `browser result`, and inspect the library before considering another write.
+Observing an already-running job is not a new save attempt.
+Broker results last only for that process's lifetime, so do not restart it to clear an unresolved save.
+
+`sessionID`, `connectorItemID` and `connectorAttachmentID` are save-session identifiers, not Zotero item keys.
+Find the actual saved item in the intended library and compare its DOI/title with the requested paper; a successful translator can still identify the wrong work.
+Check child attachments and read the specific full-text attachment, since parent-key reading may select supplementary material.
+Report metadata creation, stored file acquisition, correct-paper verification and full-text/version verification separately.
+A candidate URL, a linked attachment or a save receipt alone does not prove that the complete requested paper was obtained.
 
 ## Reading and annotating a paper
 
@@ -196,6 +265,24 @@ or newer) or web API credentials. A write refused for that reason says so.
   nothing else matched. Narrow the query and re-run.
 - An item marked `"deleted": true` is in the trash. Do not treat it as part
   of the live library.
+
+## Bound recovery and report failures together
+
+For routine acquisition, make one normal attempt on the chosen path.
+Retry once only when a specific observed condition has changed, such as completed login, a cleared challenge, corrected destination, or a finished load.
+If appropriate, try one distinct, documented alternative source or path; if it still fails, stop that item and continue independent work.
+Changing URL variants, browser settings or request parameters without new evidence is not a fresh recovery strategy.
+An explicitly requested diagnosis or development test may go further, with a concrete hypothesis and recorded outcomes; do not turn an ordinary import into open-ended debugging.
+
+When a shared bridge, authentication or destination prerequisite fails, stop the affected batch rather than reproducing that failure for every paper.
+If an operation may already have written data, verify the existing job/item before any new save.
+Respect a user's instruction to stop investigating an item or route.
+
+Keep a compact failure list while working and give one consolidated report with the successful results.
+For each unresolved item include its title/DOI, attempted route, observed failure stage, any created item/job/tab IDs and the action or condition needed to continue.
+Group common blockers once; distinguish not attempted, metadata-only, file acquired but unverified, wrong-work results, and verified acquisition.
+Report backups or restored files as preservation, not as new downloads.
+Use canonical source links and omit tokens, cookies and signed URL parameters.
 
 ## Full command reference
 
