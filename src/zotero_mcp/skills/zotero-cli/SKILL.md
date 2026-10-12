@@ -201,6 +201,10 @@ zotero-cli --json browser result JOB_ID --timeout 180
 Use observed IDs; `L4` and `42` are examples.
 A `loading` or `needs_user_action` result identifies a tab to inspect, not a reason to open the same URL repeatedly.
 Allow the current load to settle, or wait for required login/human verification, then resume that tab with `--tab-id`.
+If a CAPTCHA is visibly in progress or reported as active, defer that tab and do not submit `save` or include it in a batch until verification has finished.
+A CAPTCHA helper starting work, an enabled save button, a translator, or `inspect` reporting `ready` does not by itself confirm that the challenge cleared: detection is based on title heuristics and can miss a challenge retaining the publication title.
+Confirm clearance from the actual page or the user's confirmation, then inspect and resume the same tab; a fixed delay alone is not confirmation.
+If a save is already running or timed out, recover its original job with `result` rather than submitting a second save.
 Challenge-title detection is a heuristic; it does not establish the cause of a block or guarantee CAPTCHA handling.
 The tool does not solve CAPTCHAs.
 

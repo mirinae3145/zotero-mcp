@@ -64,6 +64,9 @@ Common challenge-page titles produce `state: needs_user_action`; a loading timeo
 These are observations based on page state, not a diagnosis of subscription rights or the challenge provider.
 No item is created in these pre-save states.
 
+If a CAPTCHA is visibly in progress or reported as active, defer that tab instead of starting or resubmitting a save.
+A helper beginning verification, an enabled save button, a detected translator or `inspect` reporting `ready` is insufficient to establish clearance: title-based detection can miss a challenge that retains the publication title.
+Confirm that verification has finished from the page or the user, then inspect and resume the same tab.
 Complete any login or human-verification prompt in the paired browser, then retry `browser save --tab-id ID` on that same tab.
 The tool does not solve CAPTCHAs and does not import another browser profile's login session.
 A publisher can also challenge a PDF request after metadata is created; those results may contain a partial save receipt and require inspecting the Connector's visible prompt.
