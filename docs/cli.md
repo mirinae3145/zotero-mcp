@@ -12,12 +12,12 @@ The MCP server sends every enabled tool's name, description and JSON parameter s
 
 | Route | Tokens in context | When it is paid |
 |---|---:|---|
-| MCP, default profile (38 tools) | 13,448 | every request |
-| MCP, `ZOTERO_MCP_TOOLSETS=none` (32 tools) | 11,761 | every request |
-| MCP, `ZOTERO_MCP_TOOLSETS=all` (50 tools) | 17,414 | every request |
+| MCP, default profile (41 tools) | 16,815 | every request |
+| MCP, `ZOTERO_MCP_TOOLSETS=none` (34 tools) | 14,317 | every request |
+| MCP, `ZOTERO_MCP_TOOLSETS=all` (53 tools) | 20,942 | every request |
 | CLI skill, frontmatter only | 98 | always |
-| CLI skill, body loaded | 1,368 | once the skill fires |
-| CLI skill + full command reference | 4,389 | worst case |
+| CLI skill, body loaded | 2,400 | once the skill fires |
+| CLI skill + full command reference | 6,158 | worst case |
 
 That is the *fixed* cost only. It does not measure task success, output size, or how many round trips each route takes to finish a job — a cheaper surface that gets the answer wrong is not cheaper. Numbers are `cl100k_base` tokens and are re-measured, not estimated; `tests/test_context_cost_claim.py` fails if the relationship stops holding.
 
@@ -100,6 +100,7 @@ zotero-cli add doi 10.1038/s41586-021-03819-2
 zotero-cli add url https://arxiv.org/abs/2301.00001
 zotero-cli add file --filepath /path/to/paper.pdf --title "Override Title"
 zotero-cli add isbn 9780262046305
+zotero-cli add pmid 31842878,16446872                # PubMed record: keeps PMID/PMCID, MeSH tags
 zotero-cli add bibtex --file refs.bib                # or --bibtex '@article{...}'
 zotero-cli add bibtex --bibtex - < refs.bib          # stdin via -
 zotero-cli add csl-json --file refs.json             # or --json '...' / --json -
