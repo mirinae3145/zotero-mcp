@@ -117,6 +117,12 @@ Keep going until `data.count` is less than `--limit`.
 Most library write commands report what they did as text under `data.text`.
 Browser commands return structured job results; failed saves can retain partial results under `data`.
 
+Use Zotero notes for literature content, interpretation and relevant evidence limits.
+Do not create or append notes merely to log registration, acquisition attempts, tool failures or verification history.
+Keep operational details needed for continuation in the task's established work records, following applicable user instructions, and summarize outcomes to the user.
+If no work-record location is established, report the necessary details in the response rather than creating a new store.
+A concise evidence limit such as "abstract only reviewed" may belong with an interpretation; the acquisition log does not.
+
 ```bash
 zotero-cli add doi 10.1038/s41586-021-03819-2 -c "Reading List"
 zotero-cli edit ABCD1234 --title "Corrected Title" --add-tags reviewed
@@ -262,8 +268,11 @@ Broker results last only for that process's lifetime, so do not restart it to cl
 
 `sessionID`, `connectorItemID` and `connectorAttachmentID` are save-session identifiers, not Zotero item keys.
 Find the actual saved item in the intended library and compare its DOI/title with the requested paper; a successful translator can still identify the wrong work.
-Check child attachments and read the specific full-text attachment, since parent-key reading may select supplementary material.
-Report metadata creation, stored file acquisition, correct-paper verification and full-text/version verification separately.
+Check child attachments and inspect the specific main-text file for identity, readability and apparent completeness; parent-key reading may select supplementary material.
+Registration verification does not require reading the entire paper or analyzing its findings.
+Check publication version when requested or when a version difference matters to the intended use.
+Summarize the outcome briefly, distinguishing metadata-only, acquired and verified results when partial success or uncertainty affects the user's next action.
+State material verification limits without a separate report for every successful check.
 A candidate URL, a linked attachment or a save receipt alone does not prove that the complete requested paper was obtained.
 
 ## Reading and annotating a paper
@@ -306,9 +315,9 @@ To annotate, plan everything, check it, then write it in one run:
 4. Run it again without `--dry-run`. Anything that did not land is listed
    under `data.results` with `ok: false`, and the exit code is 1.
 
-Colors take Zotero's names: yellow, red, green, blue, purple, magenta,
-orange, gray. Three or four colors with fixed meanings read better than
-eight; say what they mean in a note on the item.
+Colors take Zotero's names: yellow, red, green, blue, purple, magenta, orange, gray.
+Reuse the user's or library's established color meanings.
+Explain new or changed meanings only when needed to interpret the annotations; do not add a legend note to every item by default.
 
 Writes in local mode need a one-time `zotero-mcp authorize-local` (Zotero 10
 or newer) or web API credentials. A write refused for that reason says so.
@@ -337,8 +346,9 @@ If an operation may already have written data, verify the existing job/item befo
 Respect a user's instruction to stop investigating an item or route.
 
 Keep a compact failure list while working and give one consolidated report with the successful results.
-For each unresolved item include its title/DOI, attempted route, observed failure stage, any created item/job/tab IDs and the action or condition needed to continue.
-Group common blockers once; distinguish not attempted, metadata-only, file acquired but unverified, wrong-work results, and verified acquisition.
+Identify unresolved works with a title, DOI or item link, and summarize the blocker and the action or condition needed to continue.
+Retain attempted routes, failure stages and item/job/tab IDs in work records only as needed to recover an operation or prevent duplicate writes; include them in the user report when needed for user action or a requested diagnosis.
+Group common blockers once and distinguish outcome states where they affect continuation, without repeating the same operational history for each paper.
 Report backups or restored files as preservation, not as new downloads.
 Use canonical source links and omit tokens, cookies and signed URL parameters.
 
