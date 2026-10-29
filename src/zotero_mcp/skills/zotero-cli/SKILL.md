@@ -34,6 +34,11 @@ invocation with a stable shape, so you never parse prose:
 Both go to **stdout**; `[INFO]`/`[WARN]` diagnostics go to stderr. Check `ok`
 before using `data`. Run `zotero-cli --json-schema` for the full contract.
 
+Before forwarding metadata or attachment responses into tool output, chat, or retained logs, select the fields needed for the task; do not echo the full response merely to identify an attachment.
+For attachment identification, select fields such as `key`, `parentItem`, `itemType`, `title`, `contentType`, and `filename`.
+Keep signed download URLs internal to acquisition; when reporting an external acquisition source, use its canonical publication URL without authentication parameters.
+Filter before emitting or retaining the response, not only when composing the final answer.
+
 ## The core loop
 
 Almost every task is: **find keys → act on keys**. Item keys are 8

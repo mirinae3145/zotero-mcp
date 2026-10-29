@@ -61,6 +61,9 @@ Always pass `--json` when you will read the output. Every command prints one obj
 
 Check `ok` before using `data`; a failed command also exits 1. `zotero-cli --json-schema` prints the full contract, and `zotero-cli <command> --help` works for any command.
 
+For metadata and attachment responses, select only task-relevant fields before forwarding tool output or retaining logs; attachment identification does not require a signed download URL.
+Follow the [skill's output guidance](../src/zotero_mcp/skills/zotero-cli/SKILL.md#always-pass---json-when-you-will-read-the-output) for field selection and source links.
+
 **Item keys are the currency.** Almost every task is: find keys, then act on them.
 
 ```bash
