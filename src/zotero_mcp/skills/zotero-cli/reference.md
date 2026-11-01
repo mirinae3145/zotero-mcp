@@ -172,8 +172,8 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--text`
  - `--comment`
  - `--color`
- - `--add-tags` -- Comma-separated tags to add
- - `--remove-tags` -- Comma-separated tags to remove
+ - `--add-tags` -- Tags to add (comma-separated, or a JSON array if a name has a comma)
+ - `--remove-tags` -- Tags to remove (comma-separated, or a JSON array if a name has a comma)
 
 ### `annotations delete`
 
@@ -188,7 +188,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--note` -- Sticky note centered at x,y, normalized 0-1; its text is --comment
  - `--comment`
  - `--color` -- default `#ffd400` -- Hex, or a Zotero color name: yellow, red, green, blue, purple, magenta, orange, gray
- - `--tags` -- Comma-separated tags
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
  - `--open` -- Then show the new annotation in the Zotero reader
 
 ### `annotations batch`
@@ -216,7 +216,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--item-key` -- **required**
  - `--title`
  - `--text` -- Markdown ($math$, tables, zotero:// links, plus <u> <s> <sub> <sup> <mark> <span style="color:red">) or note HTML; - reads stdin
- - `--tags`
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
 
 ### `notes update`
 
@@ -235,7 +235,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `<doi>`
  - `--collections` -- Comma-separated collection keys, names, or paths
  - `-c, --collection` -- Collection key, name, or parent/child path (repeatable; not comma-split, so names with commas work)
- - `--tags` -- Comma-separated tags
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
  - `--if-exists` -- one of `file`, `skip`, `duplicate` -- default `file` -- When the item already exists: 'file' (default) reuses it and adds missing collections/tags; 'skip' leaves it untouched; 'duplicate' creates a new item anyway
  - `--create-collections` -- Create collections that don't exist yet (including parent/child paths)
  - `--attach-mode` -- one of `auto`, `linked_url`, `import_file`, `none`, `required` -- default `auto`
@@ -245,7 +245,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `<url>`
  - `--collections` -- Comma-separated collection keys, names, or paths
  - `-c, --collection` -- Collection key, name, or parent/child path (repeatable; not comma-split, so names with commas work)
- - `--tags` -- Comma-separated tags
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
  - `--if-exists` -- one of `file`, `skip`, `duplicate` -- default `file` -- When the item already exists: 'file' (default) reuses it and adds missing collections/tags; 'skip' leaves it untouched; 'duplicate' creates a new item anyway
  - `--create-collections` -- Create collections that don't exist yet (including parent/child paths)
  - `--attach-mode` -- one of `auto`, `linked_url`, `import_file`, `none`, `required` -- default `auto`
@@ -257,7 +257,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--item-type` -- default `document` -- Zotero item type for the new item (default: document)
  - `--collections` -- Comma-separated collection keys, names, or paths
  - `-c, --collection` -- Collection key, name, or parent/child path (repeatable; not comma-split, so names with commas work)
- - `--tags` -- Comma-separated tags
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
  - `--if-exists` -- one of `file`, `skip`, `duplicate` -- default `file` -- When the item already exists: 'file' (default) reuses it and adds missing collections/tags; 'skip' leaves it untouched; 'duplicate' creates a new item anyway
  - `--create-collections` -- Create collections that don't exist yet (including parent/child paths)
 
@@ -266,7 +266,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `<isbn>`
  - `--collections` -- Comma-separated collection keys, names, or paths
  - `-c, --collection` -- Collection key, name, or parent/child path (repeatable; not comma-split, so names with commas work)
- - `--tags` -- Comma-separated tags
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
  - `--if-exists` -- one of `file`, `skip`, `duplicate` -- default `file` -- When the item already exists: 'file' (default) reuses it and adds missing collections/tags; 'skip' leaves it untouched; 'duplicate' creates a new item anyway
  - `--create-collections` -- Create collections that don't exist yet (including parent/child paths)
 
@@ -275,7 +275,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `<pmid>` -- One PMID, or several comma-separated
  - `--collections` -- Comma-separated collection keys, names, or paths
  - `-c, --collection` -- Collection key, name, or parent/child path (repeatable; not comma-split, so names with commas work)
- - `--tags` -- Comma-separated tags
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
  - `--if-exists` -- one of `file`, `skip`, `duplicate` -- default `file` -- When the item already exists: 'file' (default) reuses it and adds missing collections/tags; 'skip' leaves it untouched; 'duplicate' creates a new item anyway
  - `--create-collections` -- Create collections that don't exist yet (including parent/child paths)
  - `--attach-mode` -- one of `auto`, `linked_url`, `import_file`, `none`, `required` -- default `auto`
@@ -286,7 +286,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--file` -- Path to a .bib/.bibtex file
  - `--collections` -- Comma-separated collection keys, names, or paths
  - `-c, --collection` -- Collection key, name, or parent/child path (repeatable; not comma-split, so names with commas work)
- - `--tags` -- Comma-separated tags
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
  - `--if-exists` -- one of `file`, `skip`, `duplicate` -- default `file` -- When the item already exists: 'file' (default) reuses it and adds missing collections/tags; 'skip' leaves it untouched; 'duplicate' creates a new item anyway
  - `--create-collections` -- Create collections that don't exist yet (including parent/child paths)
  - `--attach-mode` -- one of `auto`, `linked_url`, `import_file`, `none`, `required` -- default `auto`
@@ -297,7 +297,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--file` -- Path to a .json/.csljson file
  - `--collections` -- Comma-separated collection keys, names, or paths
  - `-c, --collection` -- Collection key, name, or parent/child path (repeatable; not comma-split, so names with commas work)
- - `--tags` -- Comma-separated tags
+ - `--tags` -- Tags (comma-separated, or a JSON array if a name has a comma)
  - `--if-exists` -- one of `file`, `skip`, `duplicate` -- default `file` -- When the item already exists: 'file' (default) reuses it and adds missing collections/tags; 'skip' leaves it untouched; 'duplicate' creates a new item anyway
  - `--create-collections` -- Create collections that don't exist yet (including parent/child paths)
  - `--attach-mode` -- one of `auto`, `linked_url`, `import_file`, `none`, `required` -- default `auto`
@@ -326,14 +326,6 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--add-to`
  - `--remove-from`
 
-## `tags`
-
- - `--query`
- - `--tag`
- - `--add`
- - `--remove`
- - `--limit` -- default `50`
-
 ## `edit`
 
  - `<item_key>`
@@ -342,9 +334,9 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--date`
  - `--publication-title`
  - `--abstract`
- - `--tags` -- Replace all tags (comma-separated)
- - `--add-tags`
- - `--remove-tags`
+ - `--tags` -- Replace all tags (comma-separated, or a JSON array if a name has a comma)
+ - `--add-tags` -- Tags to add (comma-separated, or a JSON array if a name has a comma)
+ - `--remove-tags` -- Tags to remove (comma-separated, or a JSON array if a name has a comma)
  - `--collections` -- Replace the item's collections (comma-separated keys); use `collections manage --add-to` to add without removing
  - `--collection-names` -- Replace the item's collections (comma-separated names)
  - `--doi`
@@ -360,6 +352,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
  - `--edition`
  - `--isbn`
  - `--book-title`
+ - `--field` -- Set a Zotero metadata field (repeatable; overrides named flags; NAME= clears a field)
 
 ## `duplicates`
 
@@ -473,7 +466,7 @@ but not follow a sub-command: `get --json metadata KEY` parses and
 ## `synthesize`
 
  - `--collection`
- - `--tag` -- Comma-separated tags to scope by
+ - `--tag` -- Tags to scope by (comma-separated, or a JSON array if a name has a comma)
  - `--limit` -- default `200`
  - `--format` -- one of `markdown`, `json` -- default `markdown`
 
@@ -491,9 +484,9 @@ but not follow a sub-command: `get --json metadata KEY` parses and
 
  - `--item-keys` -- Comma-separated item keys
  - `--query` -- Select items by search query instead
- - `--tag` -- Comma-separated tags to select by
- - `--add-tags` -- Comma-separated tags to add
- - `--remove-tags` -- Comma-separated tags to remove
+ - `--tag` -- Tags to select by (comma-separated, or a JSON array if a name has a comma)
+ - `--add-tags` -- Tags to add (comma-separated, or a JSON array if a name has a comma)
+ - `--remove-tags` -- Tags to remove (comma-separated, or a JSON array if a name has a comma)
  - `--set` -- JSON object of Extra keys to set
  - `--remove-keys` -- Comma-separated Extra keys to remove
- - `--limit` -- default `50`
+ - `--limit` -- default `50` -- Most items to select by --query/--tag (at most 1000)
